@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>张婧姝 — Tree / Galaxy / Text</title>
+
+  <style>
+    html, body { height: 100%; margin: 0; overflow: hidden; background: #000; }
+    canvas { display:block; width:100vw; height:100vh; touch-action:none; }
+
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none; z-index:2;
+      background:
+        radial-gradient(circle at 50% 28%, rgba(255,200,120,.10), rgba(0,0,0,0) 45%),
+        radial-gradient(circle at 50% 62%, rgba(255,170,90,.06), rgba(0,0,0,0) 52%),
+        radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 45%, rgba(0,0,0,.72) 100%);
+    }
+
+    .top {
+      position: fixed; left: 0; right: 0; top: 70px; z-index: 3;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+      pointer-events: none; user-select: none;
+    }
+    .title{
+      font-family: "Georgia", "Times New Roman", serif;
+      letter-spacing: .18em;
+      font-size: clamp(22px, 3.2vw, 46px);
+      color: rgba(255, 245, 220, .92);
+      text-shadow: 0 12px 60px rgba(255,180,90,.22);
+    }
+    .pill{
+      pointer-events: auto;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+      color: rgba(255,255,255,.84);
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.35);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 16px 50px rgba(0,0,0,.45);
+      cursor: pointer;
+    }
+    .hint{
+      position: fixed; left: 0; right: 0; bottom: 26px; z-index: 3;
+      display: flex; justify-content: center;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      font-size: 12px; color: rgba(255,255,255,.55);
+      pointer-events: none; user-select: none;
+    }
+  </style>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.163.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.163.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <div class="top">
+    <div class="title">张婧姝</div>
+    <div class="pill" id="modeBtn">CHRISTMAS TREE</div>
+  </div>
+  <div class="hint">拖动：旋转 / 搅动 · 轻点：Tree → Galaxy → Text · 滚轮：缩放</div>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+    import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+    import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+
+    // ---------- helpers ----------
+    const clamp01 = (x) => Math.max(0, Math.min(1, x));
+    const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
+    const lerp = (a,b,t)=>a+(b-a)*t;
+    const easeInOutCubic = (x) => (x < 0.5 ? 4*x*x*x : 1 - Math.pow(-2*x+2, 3)/2);
+    function randn() { return (Math.random()+Math.random()+Math.random()+Math.random()-2) * 0.5; }
+
+    function makeGlowSprite() {
+      const c = document.createElement("canvas");
+      c.width = c.height = 128;
+      const ctx = c.getContext("2d");
+      const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+      g.addColorStop(0.0, "rgba(255,255,255,1)");
+      g.addColorStop(0.25, "rgba(255,255,255,0.9)");
+      g.addColorStop(0.55, "rgba(255,255,255,0.28)");
+      g.addColorStop(1.0, "rgba(255,255,255,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 128, 128);
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    // ---------- palette ----------
+    const PAL = {
+      goldA: [1.00, 0.82, 0.46],
+      goldB: [1.00, 0.74, 0.36],
+      warmW: [1.00, 0.97, 0.90],
+      wineR: [0.92, 0.34, 0.30],
+      pineG: [0.26, 0.88, 0.64]
+    };
+
+    function setRGB(arr, i3, r,g,b, s=1) {
+      arr[i3+0]=r*s; arr[i3+1]=g*s; arr[i3+2]=b*s;
+    }
+
+    function pickIGAccent(prob) {
+      if (Math.random() > prob) return 0;
+      const t = Math.random();
+      if (t < 0.62) return 1;
+      if (t < 0.82) return 2;
+      return 3;
+    }
+
+    // ---------- renderer ----------
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.02;
+    document.body.appendChild(renderer.domElement);
+
+    // ---------- scene / camera ----------
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x000000, 0.028);
+
+    const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 260);
+    camera.position.set(0, 0.9, 10.2);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.22));
+    const key = new THREE.PointLight(0xffd4a0, 1.02, 90);
+    key.position.set(6, 8, 10);
+    scene.add(key);
+    const rim = new THREE.PointLight(0x7ad7ff, 0.46, 110);
+    rim.position.set(-10, 6, -10);
+    scene.add(rim);
+
+    // ---------- bloom ----------
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.95, 0.70, 0.22);
+    composer.addPass(bloom);
+
+    // ---------- UI ----------
+    const modeBtn = document.getElementById("modeBtn");
+    const labels = ["CHRISTMAS TREE", "GALAXY", "张婧姝"];
+    let mode = 0;
+
+    // ---------- particles ----------
+    const root = new THREE.Group();
+    scene.add(root);
+
+    const isMobile = Math.min(innerWidth, innerHeight) < 650;
+    const N = isMobile ? 24000 : 42000;
+    const STAR_N = isMobile ? 160 : 260;
+
+    const glowTex = makeGlowSprite();
+
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(N * 3);
+    const col = new Float32Array(N * 3);
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+
+    const mat = new THREE.PointsMaterial({
+      size: isMobile ? 0.060 : 0.046,
+      map: glowTex,
+      transparent: true,
+      opacity: 1,
+      vertexColors: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+
+    const points = new THREE.Points(geo, mat);
+    root.add(points);
+
+    // targets
+    const treePos = new Float32Array(N * 3);
+    const treeCol = new Float32Array(N * 3);
+    const galPos  = new Float32Array(N * 3);
+    const galCol  = new Float32Array(N * 3);
+    const galVel  = new Float32Array(N * 3);
+    const txtPos  = new Float32Array(N * 3);
+    const txtCol  = new Float32Array(N * 3);
+
+    // burst dirs
+    const burstDir = new Float32Array(N * 3);
+    for (let i=0;i<N;i++){
+      const a = Math.random() * Math.PI * 2;
+      const u = Math.random()*2 - 1;
+      const s = Math.sqrt(1-u*u);
+      burstDir[i*3+0] = Math.cos(a) * s;
+      burstDir[i*3+1] = u;
+      burstDir[i*3+2] = Math.sin(a) * s;
+    }
+
+    // ---------- TREE ----------
+    function buildTreeTarget() {
+      const H = 6.1;
+      const R = 3.05;
+
+      const layerC = [0.16, 0.40, 0.64, 0.84];
+      const layerW = [0.14, 0.12, 0.11, 0.10];
+      const layerA = [0.050,0.036,0.024,0.014];
+
+      const pA = Math.random() * Math.PI * 2;
+      const pB = Math.random() * Math.PI * 2;
+
+      // star
+      for (let i=0;i<STAR_N;i++){
+        const t = Math.random() * Math.PI * 2;
+        const a = 0.080 + Math.random() * 0.14;
+        const h = (Math.random()-0.5) * 0.16;
+
+        const x = Math.cos(t) * a + randn()*0.006;
+        const z = Math.sin(t) * a + randn()*0.006;
+        const yTop = (H - H*0.52);
+        const y = (yTop + 0.22) + h;
+
+        treePos[i*3+0]=x; treePos[i*3+1]=y; treePos[i*3+2]=z;
+
+        const tw = 0.22 + Math.random()*0.16;
+        const pick = (Math.random() < 0.70) ? PAL.warmW : PAL.goldA;
+        setRGB(treeCol, i*3, pick[0], pick[1], pick[2], tw);
+      }
+
+      for (let i=STAR_N;i<N;i++){
+        let u;
+        while(true){
+          u = Math.pow(Math.random(), 1.35);
+          if (u > 0.90 && Math.random() < (u-0.90)/0.10 * 0.45) continue;
+          if (u > 0.95 && Math.random() < 0.55) continue;
+          break;
+        }
+        const hN = u;
+        const theta = Math.random() * Math.PI * 2;
+
+        let base = Math.pow(1 - hN, 0.76) * R;
+
+        let bump = 1.0;
+        for (let k=0;k<4;k++){
+          const d = (hN - layerC[k]) / layerW[k];
+          bump += layerA[k] * Math.exp(-d*d);
+        }
+
+        bump *= 1.0
+          + 0.018 * Math.sin(theta*5  + pA + hN*2.2)
+          + 0.012 * Math.sin(theta*11 + pB - hN*3.1);
+
+        bump *= (1.0 - 0.022 * hN*hN);
+
+        const baseR = base * bump;
+
+        const shell = (Math.random() < 0.70)
+          ? (0.38 + 0.62 * Math.pow(Math.random(), 0.70))
+          : (Math.pow(Math.random(), 0.48));
+        let r = baseR * shell;
+
+        r += randn() * (0.020 + 0.070*(1 - hN));
+
+        const x = r * Math.cos(theta) + (Math.random()-0.5)*0.05;
+        const z = r * Math.sin(theta) + (Math.random()-0.5)*0.05;
+
+        const y0 = u * H;
+        const y = (y0 - H*0.52) + (Math.random()-0.5)*0.08;
+
+        treePos[i*3+0]=x;
+        treePos[i*3+1]=y;
+        treePos[i*3+2]=z;
+
+        let intensity = 1.00 - 0.66 * Math.pow(hN, 1.52);
+        if (hN > 0.86) intensity *= 0.60;
+        if (hN > 0.92) intensity *= 0.46;
+        if (hN < 0.07) intensity *= 0.80;
+
+        const outer = (baseR > 1e-4) ? (r / baseR) : 0;
+        const accentId = (outer > 0.62) ? pickIGAccent(0.026) : 0;
+
+        const gold = (Math.random() < 0.55) ? PAL.goldA : PAL.goldB;
+        let tw = (0.38 + Math.random()*0.55) * intensity;
+
+        if (accentId === 0) {
+          setRGB(treeCol, i*3, gold[0], gold[1], gold[2], tw);
+        } else if (accentId === 1) {
+          setRGB(treeCol, i*3, PAL.warmW[0], PAL.warmW[1], PAL.warmW[2], tw*0.78);
+        } else if (accentId === 2) {
+          setRGB(treeCol, i*3, PAL.wineR[0], PAL.wineR[1], PAL.wineR[2], tw*0.74);
+        } else {
+          setRGB(treeCol, i*3, PAL.pineG[0], PAL.pineG[1], PAL.pineG[2], tw*0.74);
+        }
+      }
+    }
+
+    // ---------- GALAXY ----------
+    function buildGalaxyTarget() {
+      const R = 58;
+      for (let i=0;i<N;i++){
+        const disk = Math.random() < 0.78;
+        const rr = disk ? (Math.random() ** 0.55) * R : (Math.random() ** 0.25) * R;
+        const t = Math.random() * Math.PI * 2;
+
+        const y = disk ? (Math.random()-0.5)*8.0 : (Math.random()-0.5)*18.0;
+        const x = Math.cos(t) * rr + (Math.random()-0.5)*0.45;
+        const z = Math.sin(t) * rr + (Math.random()-0.5)*0.45;
+
+        galPos[i*3+0]=x; galPos[i*3+1]=y; galPos[i*3+2]=z;
+
+        galVel[i*3+0]=(Math.random()-0.5)*0.0028;
+        galVel[i*3+1]=(Math.random()-0.5)*0.0016;
+        galVel[i*3+2]=(Math.random()-0.5)*0.0028;
+
+        const pick = Math.random();
+        let tw = 0.24 + Math.random() * 0.92;
+        if (pick < 0.12) setRGB(galCol, i*3, PAL.goldA[0], PAL.goldA[1], PAL.goldA[2], tw*0.80);
+        else             setRGB(galCol, i*3, 1.0, 1.0, 1.0, tw*0.82);
+      }
+    }
+
+    // ---------- TEXT (Chinese) ----------
+    function buildTextTarget(lines) {
+      const c = document.createElement("canvas");
+      c.width = 1600; c.height = 700;
+      const ctx = c.getContext("2d");
+
+      ctx.clearRect(0, 0, c.width, c.height);
+
+      // 尽量用系统常见中文字体 fallback
+      ctx.font = "900 140px system-ui, -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = "rgba(255,255,255,1)";
+      ctx.fillStyle   = "rgba(255,255,255,1)";
+
+      const midX = c.width/2;
+      const midY = c.height/2;
+      const lineH = 160 * 0.92;
+
+      lines.forEach((line, i) => {
+        const y = midY + (i - (lines.length-1)/2) * lineH;
+        ctx.strokeText(line, midX, y);
+        ctx.fillText(line,   midX, y);
+      });
+
+      const img = ctx.getImageData(0,0,c.width,c.height).data;
+      const pts = [];
+      const step = 2;
+
+      for (let y=0; y<c.height; y+=step) {
+        for (let x=0; x<c.width; x+=step) {
+          const idx = (y*c.width + x)*4;
+          const a = img[idx+3];
+          if (a > 10) {
+            if (Math.random() < 0.30) continue;
+            pts.push({x,y});
+          }
+        }
+      }
+
+      for (let i=pts.length-1;i>0;i--){
+        const j = (Math.random()*(i+1))|0;
+        const tmp = pts[i]; pts[i]=pts[j]; pts[j]=tmp;
+      }
+
+      const COUNT = Math.min(pts.length, N);
+      const thickness = 0.82;
+
+      for (let i=0;i<COUNT;i++){
+        const p = pts[i];
+        const nx = (p.x / c.width - 0.5) * 12.0;
+        const ny = -(p.y / c.height - 0.5) * 5.2;
+        const nz = (Math.random()-0.5) * thickness;
+
+        const bend = (nx*nx) * 0.012;
+
+        txtPos[i*3+0] = nx * 0.60;
+        txtPos[i*3+1] = (ny - bend) * 0.60;
+        txtPos[i*3+2] = nz * 0.60;
+
+        const accentId = pickIGAccent(0.045);
+        let tw = 0.24 + Math.random()*0.46;
+
+        if (accentId === 0) {
+          const gold = (Math.random() < 0.55) ? PAL.goldA : PAL.goldB;
+          setRGB(txtCol, i*3, gold[0], gold[1], gold[2], tw);
+        } else if (accentId === 1) {
+          setRGB(txtCol, i*3, PAL.warmW[0], PAL.warmW[1], PAL.warmW[2], tw*0.90);
+        } else if (accentId === 2) {
+          setRGB(txtCol, i*3, PAL.wineR[0], PAL.wineR[1], PAL.wineR[2], tw*0.84);
+        } else {
+          setRGB(txtCol, i*3, PAL.pineG[0], PAL.pineG[1], PAL.pineG[2], tw*0.84);
+        }
+      }
+
+      const dustCount = Math.min(N-COUNT, Math.floor(COUNT * 0.14));
+      for (let i=COUNT; i<COUNT + dustCount; i++){
+        const rr = (Math.random()**0.58) * 9.0;
+        const t = Math.random() * Math.PI * 2;
+        const x = Math.cos(t)*rr;
+        const z = Math.sin(t)*rr;
+        const y = (Math.random()-0.5) * 4.8;
+
+        txtPos[i*3+0]=x;
+        txtPos[i*3+1]=y;
+        txtPos[i*3+2]=z;
+
+        const tw = 0.02 + Math.random()*0.07;
+        setRGB(txtCol, i*3, PAL.goldA[0], PAL.goldA[1], PAL.goldA[2], tw);
+      }
+
+      for (let i=COUNT + dustCount; i<N; i++){
+        txtPos[i*3+0]=0; txtPos[i*3+1]=0; txtPos[i*3+2]=0;
+        txtCol[i*3+0]=0; txtCol[i*3+1]=0; txtCol[i*3+2]=0;
+      }
+    }
+
+    // build all targets
+    buildTreeTarget();
+    buildGalaxyTarget();
+    buildTextTarget(["张婧姝", "我喜欢你", "我爱你"]);
+
+    // init to tree
+    pos.set(treePos);
+    col.set(treeCol);
+    geo.attributes.position.needsUpdate = true;
+    geo.attributes.color.needsUpdate = true;
+
+    // morph state
+    let startPos = new Float32Array(pos);
+    let startCol = new Float32Array(col);
+    let endPos   = treePos;
+    let endCol   = treeCol;
+
+    let tr = 1;
+    let trSpeed = 1/0.85;
+    let burstAmp = 0.0;
+
+    function setMode(m) {
+      mode = (m + 3) % 3;
+      modeBtn.textContent = labels[mode];
+
+      startPos = new Float32Array(pos);
+      startCol = new Float32Array(col);
+
+      if (mode === 0) { endPos = treePos; endCol = treeCol; }
+      if (mode === 1) { endPos = galPos;  endCol = galCol;  }
+      if (mode === 2) { endPos = txtPos;  endCol = txtCol;  }
+
+      tr = 0;
+      burstAmp = 1.0;
+    }
+
+    // interaction: drag / tap
+    let isDown = false;
+    let moved = 0;
+    let lastX = 0, lastY = 0;
+    let rotVX = 0, rotVY = 0;
+
+    // galaxy stirring
+    let stirAxis = 0;
+    let stirPower = 0;
+    let stir = 0;
+
+    function onDown(e) {
+      isDown = true;
+      moved = 0;
+      const p = e.touches?.[0] ?? e;
+      lastX = p.clientX; lastY = p.clientY;
+    }
+    function onMove(e) {
+      if (!isDown) return;
+      const p = e.touches?.[0] ?? e;
+      const dx = p.clientX - lastX;
+      const dy = p.clientY - lastY;
+      lastX = p.clientX; lastY = p.clientY;
+      moved += Math.abs(dx) + Math.abs(dy);
+
+      rotVY += dx * 0.0009;
+      rotVX += dy * 0.0007;
+
+      if (mode === 1 && tr > 0.98) {
+        const v = Math.hypot(dx, dy);
+        stirPower = Math.min(1.0, stirPower + v / 260);
+        stirAxis = Math.atan2(dy, dx);
+      }
+
+      e.preventDefault?.();
+    }
+    function onUp() {
+      if (!isDown) return;
+      isDown = false;
+      if (moved < 8) setMode(mode + 1);
+    }
+
+    addEventListener("mousedown", onDown, { passive: true });
+    addEventListener("mousemove", onMove, { passive: false });
+    addEventListener("mouseup", onUp, { passive: true });
+    addEventListener("touchstart", onDown, { passive: true });
+    addEventListener("touchmove", onMove, { passive: false });
+    addEventListener("touchend", onUp, { passive: true });
+
+    modeBtn.addEventListener("click", () => setMode(mode + 1));
+
+    // wheel zoom
+    let zoomOffsetTarget = 0;
+    let zoomOffset = 0;
+    addEventListener("wheel", (e) => {
+      zoomOffsetTarget += e.deltaY * 0.012;
+      zoomOffsetTarget = clamp(zoomOffsetTarget, -6.0, 16.0);
+    }, { passive: true });
+
+    // animate
+    const clock = new THREE.Clock();
+
+    function animate() {
+      const dt = Math.min(0.033, clock.getDelta());
+      const t  = clock.elapsedTime;
+
+      rotVY *= 0.92;
+      rotVX *= 0.92;
+      root.rotation.y += rotVY + (mode === 1 ? 0.00055 : 0.00125);
+      root.rotation.x = THREE.MathUtils.clamp(root.rotation.x + rotVX, -0.55, 0.55);
+
+      zoomOffset = lerp(zoomOffset, zoomOffsetTarget, 0.15);
+      const baseZ = (mode === 1) ? 18 : (mode === 2 ? 12 : 10.2);
+      const minZ  = (mode === 1) ? 12 : (mode === 2 ? 7.6 : 6.8);
+      const maxZ  = (mode === 1) ? 32 : 22;
+      const camZTarget = clamp(baseZ + zoomOffset, minZ, maxZ);
+
+      camera.position.z = lerp(camera.position.z, camZTarget, 0.08);
+      camera.position.y = lerp(camera.position.y, (mode === 1 ? 1.35 : 0.9), 0.06);
+      camera.lookAt(0, 0, 0);
+
+      const expTarget = (mode === 2) ? 0.90 : (mode === 1 ? 1.00 : 1.00);
+      renderer.toneMappingExposure = lerp(renderer.toneMappingExposure, expTarget, 0.06);
+
+      const sizeTarget = (mode === 2) ? (isMobile ? 0.050 : 0.038)
+                                      : (isMobile ? 0.060 : 0.046);
+      mat.size = lerp(mat.size, sizeTarget, 0.06);
+
+      if (tr < 1) tr = clamp01(tr + dt * trSpeed);
+      const e = easeInOutCubic(tr);
+
+      burstAmp = lerp(burstAmp, 0.0, 0.06);
+      const burst = burstAmp * Math.sin(Math.PI * e) * (mode === 1 ? 14.5 : 9.5);
+
+      stirPower *= 0.92;
+      stir = lerp(stir, stirPower, 0.10);
+      const doGalaxy = (mode === 1 && tr > 0.98);
+      const twist = stir * 0.018;
+      const ax = Math.cos(stirAxis), ay = Math.sin(stirAxis);
+
+      for (let i=0;i<N;i++){
+        const ix = i*3;
+
+        let x = lerp(startPos[ix+0], endPos[ix+0], e);
+        let y = lerp(startPos[ix+1], endPos[ix+1], e);
+        let z = lerp(startPos[ix+2], endPos[ix+2], e);
+
+        x += burstDir[ix+0] * burst;
+        y += burstDir[ix+1] * burst * 0.65;
+        z += burstDir[ix+2] * burst;
+
+        if (doGalaxy) {
+          x += galVel[ix+0] * 60.0;
+          y += galVel[ix+1] * 60.0;
+          z += galVel[ix+2] * 60.0;
+
+          const rx = x, rz = z;
+          const cx = Math.cos(twist), sx = Math.sin(twist);
+          x = rx*cx - rz*sx;
+          z = rx*sx + rz*cx;
+
+          x += ax * stir * (0.7 + 0.3*Math.sin(i*0.01));
+          y += ay * stir * (0.5 + 0.5*Math.cos(i*0.008));
+        }
+
+        pos[ix+0]=x; pos[ix+1]=y; pos[ix+2]=z;
+
+        col[ix+0] = lerp(startCol[ix+0], endCol[ix+0], e);
+        col[ix+1] = lerp(startCol[ix+1], endCol[ix+1], e);
+        col[ix+2] = lerp(startCol[ix+2], endCol[ix+2], e);
+      }
+
+      const twBase = (mode === 2) ? 0.93 : 0.98;
+      for (let i=0; i<N; i+=180){
+        const ix = i*3;
+        const tw = twBase * (0.88 + 0.12*Math.sin(t*5.2 + i*0.02));
+        col[ix+0] *= tw; col[ix+1] *= tw; col[ix+2] *= tw;
+      }
+
+      geo.attributes.position.needsUpdate = true;
+      geo.attributes.color.needsUpdate = true;
+
+      root.position.y = Math.sin(t * 0.9) * 0.03;
+
+      const targetStrength  = (mode === 2) ? 0.62 : (mode === 1 ? 0.92 : 0.86);
+      const targetThreshold = (mode === 2) ? 0.32 : (mode === 1 ? 0.12 : 0.30);
+      const targetRadius    = (mode === 2) ? 0.52 : (mode === 1 ? 0.78 : 0.60);
+
+      bloom.strength  = lerp(bloom.strength,  targetStrength,  0.06);
+      bloom.threshold = lerp(bloom.threshold, targetThreshold, 0.06);
+      bloom.radius    = lerp(bloom.radius,    targetRadius,    0.06);
+
+      composer.render();
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    addEventListener("resize", () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      composer.setSize(innerWidth, innerHeight);
+      bloom.setSize(innerWidth, innerHeight);
+    });
+  </script>
+</body>
+</html>
