@@ -12,7 +12,9 @@ This is a user-specific integrated workflow adapted from the attributed Skills i
 - **structure**: Consult `../academic-paper/SKILL.md` and `../academic-writing/SKILL.md`. Assess paragraph function, logical progression, and reviewer comments; propose the smallest effective revision.
 - **english-voice**: Consult `../prose-quality-review/SKILL.md` and `../humanizer-en/SKILL.md`. Edit English academic prose, not conversational marketing copy.
 - **chinese-voice**: Consult `../prose-quality-review/SKILL.md` and `../humanizer-zh/SKILL.md`. Edit Chinese literary/theoretical prose without flattening its individual voice.
-- **full**: Apply the above in order, ending with a meaning-preservation audit.
+- **quantitative-prose**: Consult `../descriptive-statistics-human-voice/SKILL.md`, with `../anti-ai-writing/SKILL.md` as a secondary editorial reference. Audit raw counts, denominators, percentages, question types and representativeness before changing prose; never alter numbers to seem less AI-written.
+- **grill-me**: On explicit request to be challenged or "grilled", consult `../grill-me/SKILL.md` and its `references/academic.md` (research) or `references/thinking.md` (conceptual argument); challenge assumptions and ask only questions whose answers change the thesis or decision.
+- **full**: Apply relevant research, evidence, argument and language stages in order, ending with a meaning-preservation audit. For quantitative manuscripts include `quantitative-prose`. Do not activate `grill-me` by default.
 
 ## Non-negotiable editorial rules
 1. **Meaning and evidence first**. Never introduce unsupported specifics, invented quotes, unverifiable citations, imaginary findings, false causal claims, or fabricated first-person experience.
@@ -40,4 +42,7 @@ These are copied Markdown instructions, not automatically installed tools, exter
 - https://github.com/David-Saeteros/claude-skills (CC BY 4.0; Academic Writing)
 - https://github.com/ashgreat/humanizer (MIT; English Humanizer)
 - https://github.com/nothing0here/humanizer-zh (MIT; 中文 Humanizer)
+- https://github.com/cbsteh/anti-ai-writing (MIT; quantitative evidence and style discipline)
+- https://github.com/hiDaDeng/grill-me (repository LICENSE Apache-2.0; note SKILL frontmatter inconsistent, claiming MIT)
+- `../descriptive-statistics-human-voice/SKILL.md` (local authored survey-results prose workflow)
 Read `../README.md` for credit and license links.
