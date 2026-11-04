@@ -10,11 +10,12 @@ This is a user-specific integrated workflow adapted from the attributed Skills i
 - **research**: Consult `../deep-research/SKILL.md`. Search only authorized sources; document queries, dates, and reading scope. Verify titles/authors and exact claim locations; distinguish source findings from interpretations.
 - **argument-review**: Consult `../academic-paper-reviewer/SKILL.md`. Audit research question, method, case selection, evidence, warrant, limitation, and conclusion before stylistic editing.
 - **structure**: Consult `../academic-paper/SKILL.md` and `../academic-writing/SKILL.md`. Assess paragraph function, logical progression, and reviewer comments; propose the smallest effective revision.
-- **english-voice**: Consult `../prose-quality-review/SKILL.md` and `../humanizer-en/SKILL.md`. Edit English academic prose, not conversational marketing copy.
+- **english-voice**: By default for humanities/social science and multilingual authors, consult `../natural-non-native-academic-english/SKILL.md`; it routes to `../qualitative-social-science-humanizer/SKILL.md` for strict author-voice matching when genuine original writing samples are available. Otherwise use a minimal-edit mode without inventing a non-native style. Consult `../prose-quality-review/SKILL.md` and `../humanizer-en/SKILL.md` only as supplementary editorial guidance, not vocabulary bans.
 - **chinese-voice**: Consult `../prose-quality-review/SKILL.md` and `../humanizer-zh/SKILL.md`. Edit Chinese literary/theoretical prose without flattening its individual voice.
 - **quantitative-prose**: Consult `../descriptive-statistics-human-voice/SKILL.md`, with `../anti-ai-writing/SKILL.md` as a secondary editorial reference. Audit raw counts, denominators, percentages, question types and representativeness before changing prose; never alter numbers to seem less AI-written.
 - **grill-me**: On explicit request to be challenged or "grilled", consult `../grill-me/SKILL.md` and its `references/academic.md` (research) or `references/thinking.md` (conceptual argument); challenge assumptions and ask only questions whose answers change the thesis or decision.
 - **full**: Apply relevant research, evidence, argument and language stages in order, ending with a meaning-preservation audit. For quantitative manuscripts include `quantitative-prose`. Do not activate `grill-me` by default.
+- **quick invocation / 简称「我的GitHub学术润色」**: If a user has explicitly provided this repository and asks for `我的 GitHub 学术润色`, select the relevant mode automatically. English defaults to **natural, accurate, not over-nativised**, Chinese to voice-preserving editing, tables/percentages to quantitative-prose. Preserve content by default and ask for genuine author samples only when detailed voice matching is requested.
 
 ## Non-negotiable editorial rules
 1. **Meaning and evidence first**. Never introduce unsupported specifics, invented quotes, unverifiable citations, imaginary findings, false causal claims, or fabricated first-person experience.
@@ -44,5 +45,7 @@ These are copied Markdown instructions, not automatically installed tools, exter
 - https://github.com/nothing0here/humanizer-zh (MIT; 中文 Humanizer)
 - https://github.com/cbsteh/anti-ai-writing (MIT; quantitative evidence and style discipline)
 - https://github.com/hiDaDeng/grill-me (repository LICENSE Apache-2.0; note SKILL frontmatter inconsistent, claiming MIT)
+- https://github.com/XuyueyangHe/Qualitative-social-science-humanizer (MIT; preserve a genuine author's interpretive social-science voice)
+- `../natural-non-native-academic-english/SKILL.md` (locally authored editing mode)
 - `../descriptive-statistics-human-voice/SKILL.md` (local authored survey-results prose workflow)
 Read `../README.md` for credit and license links.
