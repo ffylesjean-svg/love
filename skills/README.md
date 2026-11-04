@@ -17,6 +17,9 @@ The integrated skill selects among research, argument review, academic writing, 
 | `academic-writing/` | Academic editing and reviewer responses | [David Saeteros](https://github.com/David-Saeteros/claude-skills) |
 | `humanizer-en/` | Academic English prose editing | [ashgreat](https://github.com/ashgreat/humanizer) |
 | `humanizer-zh/` | Natural Chinese writing and voice matching | [nothing0here](https://github.com/nothing0here/humanizer-zh) |
+| `anti-ai-writing/` | Quantitative reporting integrity and academic prose editing | [cbsteh](https://github.com/cbsteh/anti-ai-writing) |
+| `descriptive-statistics-human-voice/` | Natural Chinese/English reporting of descriptive survey statistics, with numerical integrity checks | Original adapted companion |
+| `grill-me/` | Critical questions for research ideas, decisions and philosophical arguments, with accompanying references | [hiDaDeng](https://github.com/hiDaDeng/grill-me) |
 | `academic-research-human-voice/` | Custom bilingual integration and safeguards | Derived workflow |
 
 ## How to use
@@ -27,5 +30,7 @@ In a new conversation, provide the URL of `skills/academic-research-human-voice/
 - Upstream skill instructions are treated as guidance, not automatic authorization to run code or send private manuscript data elsewhere.
 - No external scripts have been executed. No user documents, unpublished research, credentials, or personal records have been added here.
 - This is a **public repository**. Keep confidential materials out.
-- Original projects retain their authorship and copyright. MIT license copies for kinqsradio, ashgreat, and nothing0here, and CC BY 4.0 attribution terms for David Saeteros are in [licenses](licenses). This integrated work makes no claim of third-party endorsement.
-- Copied and assembled on 2026-11-04. Check upstream for updates.
+- The `grill-me` copy includes its original reference-route files and templates. Its upstream `SKILL.md` frontmatter says MIT, but the repository root `LICENSE` is Apache-2.0; this library preserves the root Apache-2.0 licence and flags the inconsistency rather than claiming a resolved licence.
+- The `anti-ai-writing` and `grill-me` copies are third-party source material; `descriptive-statistics-human-voice` is newly authored and explicitly prohibits alteration or fabrication of numbers.
+- Original projects retain their authorship and copyright. MIT license copies for kinqsradio, ashgreat, and nothing0here, and CC BY 4.0 attribution terms for David Saeteros are in [licenses](licenses). Additional upstream licence copies for cbsteh (MIT) and hiDaDeng (Apache-2.0) are also included. This integrated work makes no claim of third-party endorsement.
+- Copied and expanded on 2026-11-04. Check upstream for updates.
