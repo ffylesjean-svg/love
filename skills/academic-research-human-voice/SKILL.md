@@ -12,9 +12,10 @@ This is a user-specific integrated workflow adapted from the attributed Skills i
 - **structure**: Consult `../academic-paper/SKILL.md` and `../academic-writing/SKILL.md`. Assess paragraph function, logical progression, and reviewer comments; propose the smallest effective revision.
 - **english-voice**: By default for humanities/social science and multilingual authors, consult `../natural-non-native-academic-english/SKILL.md`; it routes to `../qualitative-social-science-humanizer/SKILL.md` for strict author-voice matching when genuine original writing samples are available. Otherwise use a minimal-edit mode without inventing a non-native style. Consult `../prose-quality-review/SKILL.md` and `../humanizer-en/SKILL.md` only as supplementary editorial guidance, not vocabulary bans.
 - **chinese-voice**: Consult `../prose-quality-review/SKILL.md` and `../humanizer-zh/SKILL.md`. Edit Chinese literary/theoretical prose without flattening its individual voice.
+- **anti-defensive / default prose pass**: For user-facing prose and draft revisions, consult `../anti-defensive-writing/SKILL.md` to remove redundant disclaimers, excessive hedging and mechanical contrasts. For Chinese, also consult `../anti-defensive-writing-zh/SKILL.md` and its relevant references. For academic contribution framing, selectively consult `../anti-defensive-academic-press-release/SKILL.md` (English companion: `../anti-defensive-academic-press-release/references/english-version.md`). Prefer direct, evidence-based assertions; avoid formulaic topic summaries and defensive paragraph-end recaps while retaining meaningful contrasts.
 - **quantitative-prose**: Consult `../descriptive-statistics-human-voice/SKILL.md`, with `../anti-ai-writing/SKILL.md` as a secondary editorial reference. Audit raw counts, denominators, percentages, question types and representativeness before changing prose; never alter numbers to seem less AI-written.
 - **grill-me**: On explicit request to be challenged or "grilled", consult `../grill-me/SKILL.md` and its `references/academic.md` (research) or `references/thinking.md` (conceptual argument); challenge assumptions and ask only questions whose answers change the thesis or decision.
-- **full**: Apply relevant research, evidence, argument and language stages in order, ending with a meaning-preservation audit. For quantitative manuscripts include `quantitative-prose`. Do not activate `grill-me` by default.
+- **full**: Apply relevant research, evidence, argument, language and anti-defensive stages in order, ending with a meaning-preservation audit. For quantitative manuscripts include `quantitative-prose`. Do not activate `grill-me` by default.
 - **quick invocation / 简称「我的GitHub学术润色」**: If a user has explicitly provided this repository and asks for `我的 GitHub 学术润色`, select the relevant mode automatically. English defaults to **natural, accurate, not over-nativised**, Chinese to voice-preserving editing, tables/percentages to quantitative-prose. Preserve content by default and ask for genuine author samples only when detailed voice matching is requested.
 
 ## Non-negotiable editorial rules
@@ -25,6 +26,7 @@ This is a user-specific integrated workflow adapted from the attributed Skills i
 5. **Author samples take precedence**. Use only the author's own approved original writing as voice calibration; never assume a model-polished draft represents their native voice.
 6. **Academic conventions override generic humanizer heuristics**. Passive voice, abstractions, long sentences, parenthetical qualifiers, and contrast structures are legitimate when performing real work.
 7. **No detector promises**. Do not claim that wording can reliably defeat AI detectors; disclose AI use as required by applicable academic and publishing rules.
+8. **Anti-defensive does not mean selective reporting**. Keep relevant unfavorable findings, uncertainty, negative evidence and material limitations. Do not change metrics, evaluation conditions or strength of claims to create a stronger story. Interpret the Adkid-Zephyr 'press-release' approach only as an organizing heuristic compatible with research integrity.
 
 ## English: Academic Human Voice
 Use British English by default, subject to journal style. Identify inflated framing, meta-signposting without argumentative value, padding, unsupported booster adjectives, nominalization obscuring actors, and repeated transitions. Avoid forcing first-person "we", short sentences, active voice, or simple synonyms if the discipline calls for conceptual exactness. Preserve rhetorical differences between a film close reading, conceptual essay, empirical paper, and journal response.
@@ -39,6 +41,9 @@ For a full review, deliver: (1) concrete issues with exact locations; (2) why th
 These are copied Markdown instructions, not automatically installed tools, external scholarly database access, or CLI dependencies. Some upstream relative links may depend on files outside this curated library. Follow only those portions supported by the current environment, with limitations made explicit.
 
 ## Original projects
+- https://github.com/Kiterlin/anti-defensive-writing (MIT; general anti-defensive prose)
+- https://github.com/Devilyuu/anti-defensive-writing-zh (MIT; Chinese anti-defensive writing, references and optional auditing scripts)
+- https://github.com/Adkid-Zephyr/anti-defensive-writing-Skill (MIT; academic contribution framing, Chinese and English)
 - https://github.com/kinqsradio/academic-research-skills (MIT; Deep Research, Academic Paper, Reviewer, Prose Quality)
 - https://github.com/David-Saeteros/claude-skills (CC BY 4.0; Academic Writing)
 - https://github.com/ashgreat/humanizer (MIT; English Humanizer)
